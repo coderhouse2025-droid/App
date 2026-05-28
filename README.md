@@ -1,6 +1,7 @@
 # 💰 GastoApp Pro
 
-![Uploading Mockup.png…]()
+<img width="1698" height="926" alt="Mockup" src="https://github.com/user-attachments/assets/0a14025e-36ef-495e-bc11-b9174a2f9b25" />
+
 
 
 
