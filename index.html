@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GastoApp Pro - Control de Presupuesto</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6C63FF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="GastoApp Pro">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --purple: #6C63FF;
+            --purple-dark: #4B44CC;
+            --purple-light: #8B84FF;
+            --purple-soft: #F0EFFE;
+            --green: #22C55E;
+            --green-light: #DCFCE7;
+            --green-dark: #16A34A;
+            --red: #EF4444;
+            --red-light: #FEE2E2;
+            --red-dark: #DC2626;
+            --orange: #F97316;
+            --orange-light: #FFEDD5;
+            --blue: #3B82F6;
+            --blue-light: #DBEAFE;
+            --teal: #14B8A6;
+            --bg: #F4F6FB;
+            --surface: #FFFFFF;
+            --text: #1A1D2E;
+            --muted: #8A94A6;
+            --border: #E8ECF4;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            max-width: 430px;
+            margin: 0 auto;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ── APP SHELL ─────────────────────────────── */
+        #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* ── SCREENS ───────────────────────────────── */
+        .screen { display: none; flex: 1; flex-direction: column; }
+        .screen.active { display: flex; }
+
+        /* ── SPLASH ────────────────────────────────── */
+        #splash {
+            background: linear-gradient(160deg, #7B74FF 0%, #5B52E8 50%, #4340C4 100%);
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+        #splash::before {
+            content: '';
+            position: absolute;
+            width: 340px; height: 340px;
+            background: rgba(255,255,255,0.07);
+            border-radius: 50%;
+            top: -80px; left: -80px;
+        }
+        #splash::after {
+            content: '';
+            position: absolute;
+            width: 260px; height: 260px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+            bottom: 60px; right: -60px;
+        }
+        .splash-logo {
+            width: 96px; height: 96px;
+            background: rgba(255,255,255,0.18);
+            border-radius: 28px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 28px;
+            backdrop-filter: blur(10px);
+            border: 1.5px solid rgba(255,255,255,0.25);
+        }
+        .splash-logo svg { width: 52px; height: 52px; }
+        .splash-title { color: #fff; font-size: 2rem; font-weight: 900; text-align: center; letter-spacing: -0.02em; }
+        .splash-sub { color: rgba(255,255,255,0.75); font-size: 0.95rem; font-weight: 500; text-align: center; margin-top: 8px; margin-bottom: 60px; }
+        .splash-dots { display: flex; gap: 8px; margin-bottom: 48px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.35); }
+        .dot.active { width: 24px; border-radius: 4px; background: #fff; }
+        .btn-start {
+            background: #fff;
+            color: var(--purple);
+            border: none;
+            border-radius: 16px;
+            padding: 18px 0;
+            width: 280px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            font-family: 'Nunito', sans-serif;
+            transition: transform 0.15s, box-shadow 0.2s;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+        }
+        .btn-start:active { transform: scale(0.97); }
+        .splash-content { display: flex; flex-direction: column; align-items: center; z-index: 1; }
+
+        /* ── TOP HEADER ────────────────────────────── */
+        .page-header {
+            padding: 52px 20px 16px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+        }
+        .header-greeting { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+        .header-title { font-size: 1.45rem; font-weight: 900; color: var(--text); margin-top: 2px; letter-spacing: -0.02em; }
+        .icon-btn {
+            width: 40px; height: 40px;
+            background: var(--surface);
+            border-radius: 12px;
+            border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            color: var(--text);
+            position: relative;
+        }
+        .notif-dot {
+            position: absolute;
+            top: 8px; right: 8px;
+            width: 7px; height: 7px;
+            background: var(--purple);
+            border-radius: 50%;
+            border: 1.5px solid #fff;
+        }
+
+        /* ── BALANCE CARD ───────────────────────────── */
+        .balance-card {
+            margin: 0 20px 20px;
+            background: linear-gradient(135deg, #7B74FF 0%, #5044E8 100%);
+            border-radius: 24px;
+            padding: 24px;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(108,99,255,0.35);
+        }
+        .balance-card::before {
+            content: '';
+            position: absolute;
+            width: 180px; height: 180px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+            top: -60px; right: -40px;
+        }
+        .balance-card::after {
+            content: '';
+            position: absolute;
+            width: 120px; height: 120px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+            bottom: -30px; left: 30px;
+        }
+        .balance-label {
+            font-size: 0.75rem; font-weight: 700;
+            opacity: 0.8; letter-spacing: 0.04em; text-transform: uppercase;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .balance-amount { font-size: 2.2rem; font-weight: 900; margin: 8px 0 4px; letter-spacing: -0.02em; line-height: 1; }
+        .balance-period { font-size: 0.8rem; opacity: 0.7; font-weight: 600; }
+
+        /* ── SUMMARY ROW ──────────────────────────── */
+        .summary-section { padding: 0 20px; margin-bottom: 20px; }
+        .summary-title { font-size: 0.85rem; font-weight: 800; color: var(--text); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.6; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .summary-card {
+            background: var(--surface);
+            border-radius: 18px;
+            padding: 16px;
+            display: flex; align-items: center; gap: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .summary-icon {
+            width: 44px; height: 44px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .summary-icon.income { background: var(--green-light); }
+        .summary-icon.expense { background: var(--red-light); }
+        .summary-info { flex: 1; min-width: 0; }
+        .summary-lbl { font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+        .summary-val { font-size: 1.05rem; font-weight: 900; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .summary-val.income { color: var(--green-dark); }
+        .summary-val.expense { color: var(--red-dark); }
+        .summary-sub { font-size: 0.65rem; color: var(--muted); font-weight: 600; margin-top: 1px; }
+
+        /* ── PROGRESS ──────────────────────────────── */
+        .progress-section { padding: 0 20px; margin-bottom: 20px; }
+        .progress-card {
+            background: var(--surface);
+            border-radius: 18px;
+            padding: 18px 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .progress-title { font-size: 0.85rem; font-weight: 800; color: var(--text); }
+        .progress-pct { font-size: 0.85rem; font-weight: 900; color: var(--purple); }
+        .progress-track {
+            background: #EEF0F8;
+            border-radius: 999px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        .progress-bar {
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--purple), var(--purple-light));
+            transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+        }
+        .progress-bar.warning { background: linear-gradient(90deg, #F97316, #FBBF24); }
+        .progress-bar.danger { background: linear-gradient(90deg, #EF4444, #F87171); }
+        .progress-labels { display: flex; justify-content: space-between; font-size: 0.68rem; font-weight: 700; color: var(--muted); }
+
+        /* ── QUICK ACCESS ──────────────────────────── */
+        .quick-section { padding: 0 20px; margin-bottom: 20px; }
+        .quick-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .quick-btn {
+            background: var(--surface);
+            border: none;
+            border-radius: 16px;
+            padding: 14px 8px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.15s;
+            font-family: 'Nunito', sans-serif;
+        }
+        .quick-btn:active { transform: scale(0.94); }
+        .quick-icon {
+            width: 44px; height: 44px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .quick-icon.add { background: var(--purple-soft); }
+        .quick-icon.analytics { background: #EFF6FF; }
+        .quick-icon.budget { background: #FFF7ED; }
+        .quick-icon.goals { background: #F5F3FF; }
+        .quick-label { font-size: 0.6rem; font-weight: 800; color: var(--muted); text-align: center; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.2; }
+
+        /* ── BOTTOM NAV ────────────────────────────── */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 100%; max-width: 430px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: flex; align-items: center;
+            padding: 8px 0 20px;
+            z-index: 50;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+        }
+        .nav-item {
+            flex: 1;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            background: none; border: none;
+            cursor: pointer;
+            padding: 6px 0;
+            font-family: 'Nunito', sans-serif;
+            transition: transform 0.15s;
+        }
+        .nav-item:active { transform: scale(0.9); }
+        .nav-label { font-size: 0.6rem; font-weight: 800; color: var(--muted); text-transform: capitalize; letter-spacing: 0.02em; }
+        .nav-item.active .nav-label { color: var(--purple); }
+        .nav-item.active svg { stroke: var(--purple); }
+        .nav-item svg { stroke: var(--muted); width: 22px; height: 22px; }
+        .nav-fab {
+            width: 56px; height: 56px;
+            background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+            border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            margin-top: -24px;
+            box-shadow: 0 4px 20px rgba(108,99,255,0.45);
+            cursor: pointer;
+            border: none;
+            flex-shrink: 0;
+            transition: transform 0.15s;
+        }
+        .nav-fab:active { transform: scale(0.93); }
+        .nav-fab svg { width: 26px; height: 26px; stroke: #fff; }
+
+        /* ── PAGE WRAPPER (for scrollable content above nav) */
+        .page-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 90px;
+        }
+        .page-scroll::-webkit-scrollbar { display: none; }
+
+        /* ── ANALYSIS SCREEN ────────────────────────── */
+        .analysis-header {
+            padding: 52px 20px 16px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .back-btn {
+            width: 36px; height: 36px;
+            border: none; background: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .page-title { font-size: 1.1rem; font-weight: 900; color: var(--text); }
+
+        .period-tabs {
+            display: flex;
+            background: #EDEEFF;
+            border-radius: 14px;
+            padding: 4px;
+            margin: 0 20px 20px;
+        }
+        .period-tab {
+            flex: 1;
+            padding: 9px 0;
+            border: none; border-radius: 10px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.82rem; font-weight: 800;
+            cursor: pointer;
+            background: none;
+            color: var(--muted);
+            transition: all 0.2s;
+        }
+        .period-tab.active {
+            background: var(--purple);
+            color: #fff;
+            box-shadow: 0 3px 12px rgba(108,99,255,0.3);
+        }
+
+        .chart-card {
+            margin: 0 20px 20px;
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .chart-title { font-size: 0.85rem; font-weight: 800; color: var(--text); margin-bottom: 16px; }
+        .chart-wrap { position: relative; height: 200px; }
+
+        .cat-list { padding: 0 20px; }
+        .cat-item {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+        }
+        .cat-icon {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .cat-info { flex: 1; }
+        .cat-name { font-size: 0.85rem; font-weight: 800; color: var(--text); }
+        .cat-bar-track { background: #F0F2F8; border-radius: 999px; height: 4px; margin-top: 5px; overflow: hidden; }
+        .cat-bar-fill { height: 100%; border-radius: 999px; }
+        .cat-amounts { text-align: right; }
+        .cat-amount { font-size: 0.85rem; font-weight: 900; color: var(--text); }
+        .cat-pct { font-size: 0.7rem; color: var(--muted); font-weight: 700; }
+
+        /* ── ADD MOVEMENT SCREEN ────────────────────── */
+        .add-header {
+            padding: 52px 20px 20px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .form-card {
+            margin: 0 20px;
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            margin-bottom: 16px;
+        }
+        .field-label { font-size: 0.75rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: block; }
+        .field-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #F8F9FD;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            appearance: none;
+        }
+        .field-input:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(108,99,255,0.12); }
+        .field-input::placeholder { color: #C4CAD9; }
+        .field-group { margin-bottom: 16px; }
+
+        /* Category radio */
+        .cat-radio-list { display: flex; flex-direction: column; gap: 2px; }
+        .cat-radio-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .cat-radio-item:last-child { border-bottom: none; }
+        .cat-radio-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+        .cat-radio-name { flex: 1; font-size: 0.9rem; font-weight: 700; color: var(--text); }
+        .radio-circle {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            transition: border-color 0.2s;
+        }
+        .radio-circle.checked { border-color: var(--purple); background: var(--purple); }
+        .radio-circle.checked::after { content: ''; width: 8px; height: 8px; background: #fff; border-radius: 50%; display: block; }
+
+        .btn-save {
+            margin: 0 20px;
+            width: calc(100% - 40px);
+            padding: 18px;
+            background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 1rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 6px 24px rgba(108,99,255,0.35);
+            transition: transform 0.15s;
+        }
+        .btn-save:active { transform: scale(0.97); }
+
+        /* ── MOVEMENTS SCREEN ───────────────────────── */
+        .movements-header {
+            padding: 52px 20px 16px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .month-selector {
+            display: flex; align-items: center; gap: 4px;
+            background: #F0EFFE;
+            border-radius: 10px;
+            padding: 6px 10px;
+        }
+        .month-selector select {
+            background: none; border: none;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.8rem; font-weight: 800;
+            color: var(--purple);
+            cursor: pointer;
+            appearance: none;
+        }
+        .movements-list { padding: 0 20px; }
+        .movement-item {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+            animation: fadeInUp 0.3s ease both;
+        }
+        .movement-icon { width: 42px; height: 42px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+        .movement-info { flex: 1; min-width: 0; }
+        .movement-name { font-size: 0.88rem; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .movement-meta { font-size: 0.68rem; font-weight: 700; color: var(--muted); margin-top: 2px; }
+        .movement-amount { font-size: 0.92rem; font-weight: 900; }
+        .movement-amount.expense { color: var(--red-dark); }
+        .movement-amount.income { color: var(--green-dark); }
+        .del-btn { opacity: 0; background: none; border: none; color: #CBD5E1; cursor: pointer; padding: 4px; border-radius: 8px; transition: opacity 0.2s, color 0.2s; }
+        .movement-item:hover .del-btn { opacity: 1; }
+        .del-btn:hover { color: var(--red); }
+
+        /* ── EMPTY STATE ─────────────────────────────── */
+        .empty-state { padding: 60px 20px; text-align: center; }
+        .empty-state .emoji { font-size: 3.5rem; margin-bottom: 12px; }
+        .empty-state p { color: var(--muted); font-size: 0.9rem; font-weight: 700; }
+        .empty-state span { font-size: 0.75rem; color: #C4CAD9; font-weight: 600; }
+
+        /* ── TOAST ──────────────────────────────────── */
+        #toast {
+            position: fixed; bottom: 100px; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1A1D2E; color: #fff;
+            padding: 12px 24px; border-radius: 999px;
+            font-size: 0.82rem; font-weight: 700;
+            opacity: 0; transition: opacity 0.3s, transform 0.3s;
+            z-index: 999; white-space: nowrap;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ── ANIMATIONS ─────────────────────────────── */
+        @keyframes fadeInUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+        .fade-in { animation: fadeInUp 0.4s ease both; }
+
+        /* Category colors */
+        .bg-vivienda { background: #EFF6FF; }
+        .bg-comida { background: #FEF9C3; }
+        .bg-servicios { background: #FFF7ED; }
+        .bg-transporte { background: #F0FDF4; }
+        .bg-ocio { background: #FDF4FF; }
+        .bg-salud { background: #FFF1F2; }
+        .bg-ingreso { background: #F0FDF4; }
+        .bg-otros { background: #F8FAFC; }
+        .bar-vivienda { background: #3B82F6; }
+        .bar-comida { background: #EAB308; }
+        .bar-servicios { background: #F97316; }
+        .bar-transporte { background: #22C55E; }
+        .bar-ocio { background: #A855F7; }
+        .bar-salud { background: #EF4444; }
+        .bar-ingreso { background: #22C55E; }
+        .bar-otros { background: #94A3B8; }
+
+        /* Export button */
+        .export-btn {
+            background: none; border: none;
+            display: flex; align-items: center; gap: 6px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.72rem; font-weight: 800;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 10px;
+            transition: color 0.2s, background 0.2s;
+            text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        .export-btn:hover { color: var(--red); background: var(--red-light); }
+
+        /* Scrollbar hide */
+        .page-scroll::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+<div id="app">
+
+    <!-- ═══════════════════════════════════════════ SPLASH -->
+    <div id="splash" class="screen active">
+        <div class="splash-content">
+            <div class="splash-logo">
+                <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none">
+                    <rect x="10" y="22" width="44" height="34" rx="8" fill="rgba(255,255,255,0.25)"/>
+                    <rect x="10" y="22" width="44" height="34" rx="8" stroke="rgba(255,255,255,0.6)" stroke-width="2"/>
+                    <path d="M22 22V16a10 10 0 0120 0v6" stroke="rgba(255,255,255,0.8)" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="32" cy="38" r="6" fill="white" opacity="0.9"/>
+                    <text x="32" y="42" text-anchor="middle" font-family="Arial Black" font-weight="900" font-size="9" fill="#6C63FF">$</text>
+                </svg>
+            </div>
+            <h1 class="splash-title">GastoApp Pro</h1>
+            <p class="splash-sub">Control total de tu dinero</p>
+            <div class="splash-dots">
+                <div class="dot active"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <button class="btn-start" onclick="goToHome()">Comenzar</button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ HOME -->
+    <div id="home" class="screen">
+        <div class="page-scroll">
+            <div class="page-header">
+                <div>
+                    <p class="header-greeting">¡Hola, Usuario!</p>
+                    <h1 class="header-title">Resumen de hoy</h1>
+                </div>
+                <div class="flex gap-2" style="display:flex;gap:8px;">
+                    <button class="icon-btn" onclick="showNotifToast()">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                        <span class="notif-dot"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Balance card -->
+            <div class="balance-card">
+                <div class="balance-label">
+                    <span>Balance disponible</span>
+                    <button onclick="toggleBalance()" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.7);">
+                        <svg id="eye-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+                <div id="balance-amount" class="balance-amount">$0,00</div>
+                <div id="balance-period" class="balance-period">Cargando...</div>
+            </div>
+
+            <!-- Summary cards -->
+            <div class="summary-section">
+                <p class="summary-title">Resumen del mes</p>
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-icon income">
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                        </div>
+                        <div class="summary-info">
+                            <div class="summary-lbl">Ingresos</div>
+                            <div id="home-income" class="summary-val income">$0</div>
+                            <div class="summary-sub">Este mes</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon expense">
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
+                        <div class="summary-info">
+                            <div class="summary-lbl">Gastos</div>
+                            <div id="home-expense" class="summary-val expense">$0</div>
+                            <div class="summary-sub">Este mes</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget progress -->
+            <div class="progress-section">
+                <div class="progress-card">
+                    <div class="progress-header">
+                        <span class="progress-title">Presupuesto utilizado</span>
+                        <span id="progress-pct" class="progress-pct">0%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="home-progress-bar" class="progress-bar" style="width:0%"></div>
+                    </div>
+                    <div class="progress-labels">
+                        <span id="home-spent-lbl">Gastado: $0</span>
+                        <span id="home-income-lbl">Presupuesto: $0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick access -->
+            <div class="quick-section">
+                <p class="summary-title">Accesos rápidos</p>
+                <div class="quick-grid">
+                    <button class="quick-btn" onclick="navigate('add')">
+                        <div class="quick-icon add">
+                            <svg width="20" height="20" fill="none" stroke="#6C63FF" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </div>
+                        <span class="quick-label">Nuevo Movimiento</span>
+                    </button>
+                    <button class="quick-btn" onclick="navigate('analysis')">
+                        <div class="quick-icon analytics">
+                            <svg width="20" height="20" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        </div>
+                        <span class="quick-label">Análisis</span>
+                    </button>
+                    <button class="quick-btn" onclick="toast('📊 Próximamente')">
+                        <div class="quick-icon budget">
+                            <svg width="20" height="20" fill="none" stroke="#F97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <span class="quick-label">Presupuestos</span>
+                    </button>
+                    <button class="quick-btn" onclick="toast('🎯 Próximamente')">
+                        <div class="quick-icon goals">
+                            <svg width="20" height="20" fill="none" stroke="#A855F7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+                        </div>
+                        <span class="quick-label">Metas</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Nav -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="navigate('home')" id="nav-home">
+                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span class="nav-label">Inicio</span>
+            </button>
+            <button class="nav-item" onclick="navigate('analysis')" id="nav-analysis">
+                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <span class="nav-label">Análisis</span>
+            </button>
+            <button class="nav-fab" onclick="navigate('add')">
+                <svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button class="nav-item" onclick="navigate('movements')" id="nav-movements">
+                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                <span class="nav-label">Movimientos</span>
+            </button>
+            <button class="nav-item" onclick="toast('👤 Perfil próximamente')" id="nav-profile">
+                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="nav-label">Perfil</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ ANALYSIS -->
+    <div id="analysis" class="screen">
+        <div class="page-scroll">
+            <div class="analysis-header">
+                <button class="back-btn" onclick="navigate('home')">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <span class="page-title">Análisis</span>
+                <button class="icon-btn" style="width:36px;height:36px;" onclick="showMonthPicker()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </button>
+            </div>
+
+            <div class="period-tabs">
+                <button class="period-tab active" onclick="setPeriod(this,'mes')">Mes</button>
+                <button class="period-tab" onclick="setPeriod(this,'trimestre')">Trimestre</button>
+                <button class="period-tab" onclick="setPeriod(this,'año')">Año</button>
+            </div>
+
+            <div class="chart-card">
+                <p class="chart-title">Gastos por categoría</p>
+                <div class="chart-wrap">
+                    <canvas id="analysisChart"></canvas>
+                    <div id="chart-center" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;">
+                        <div style="font-size:0.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Total Gastos</div>
+                        <div id="chart-total" style="font-size:1.1rem;font-weight:900;color:var(--text);">$0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cat-list" id="cat-list">
+                <!-- filled by JS -->
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <button class="nav-item" onclick="navigate('home')" id="nav2-home">
+                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span class="nav-label">Inicio</span>
+            </button>
+            <button class="nav-item active" onclick="navigate('analysis')" id="nav2-analysis">
+                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <span class="nav-label">Análisis</span>
+            </button>
+            <button class="nav-fab" onclick="navigate('add')">
+                <svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button class="nav-item" onclick="navigate('movements')" id="nav2-movements">
+                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+                <span class="nav-label">Movimientos</span>
+            </button>
+            <button class="nav-item" onclick="toast('👤 Perfil próximamente')">
+                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="nav-label">Perfil</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ ADD MOVEMENT -->
+    <div id="add" class="screen">
+        <div class="page-scroll">
+            <div class="add-header">
+                <button class="back-btn" onclick="navigate('home')">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <span class="page-title">Nuevo Movimiento</span>
+            </div>
+
+            <div class="form-card">
+                <div class="field-group">
+                    <label class="field-label">Descripción</label>
+                    <input type="text" id="f-desc" class="field-input" placeholder="Ej: Pago de alquiler">
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Monto</label>
+                    <input type="number" id="f-amount" class="field-input" placeholder="0,00" step="0.01">
+                </div>
+                <div class="field-group" style="margin-bottom:0;">
+                    <label class="field-label">Categoría</label>
+                    <div class="cat-radio-list" id="cat-radio-list">
+                        <!-- filled by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-save" onclick="saveMovement()">Guardar Movimiento</button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ MOVEMENTS -->
+    <div id="movements" class="screen">
+        <div class="page-scroll">
+            <div class="movements-header">
+                <div>
+                    <h1 class="header-title">Movimientos</h1>
+                    <p id="mov-count" style="font-size:0.75rem;color:var(--muted);font-weight:700;margin-top:2px;">0 registros</p>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <div class="month-selector">
+                        <svg width="12" height="12" fill="none" stroke="#6C63FF" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <select id="mov-month" style="background:none;border:none;font-family:Nunito,sans-serif;font-size:0.8rem;font-weight:800;color:#6C63FF;cursor:pointer;appearance:none;"></select>
+                        <select id="mov-year" style="background:none;border:none;font-family:Nunito,sans-serif;font-size:0.8rem;font-weight:800;color:#6C63FF;cursor:pointer;appearance:none;"></select>
+                    </div>
+                    <button class="export-btn" onclick="exportPDF()">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        PDF
+                    </button>
+                </div>
+            </div>
+            <div class="movements-list" id="movements-list"></div>
+            <div id="movements-empty" class="empty-state hidden">
+                <div class="emoji">📭</div>
+                <p>No hay registros este mes</p>
+                <span>Usá el botón + para agregar tu primer movimiento</span>
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <button class="nav-item" onclick="navigate('home')">
+                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span class="nav-label">Inicio</span>
+            </button>
+            <button class="nav-item" onclick="navigate('analysis')">
+                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <span class="nav-label">Análisis</span>
+            </button>
+            <button class="nav-fab" onclick="navigate('add')">
+                <svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button class="nav-item active" onclick="navigate('movements')">
+                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+                <span class="nav-label">Movimientos</span>
+            </button>
+            <button class="nav-item" onclick="toast('👤 Perfil próximamente')">
+                <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="nav-label">Perfil</span>
+            </button>
+        </nav>
+    </div>
+
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ─── Data ──────────────────────────────────────────────────────────
+let db = JSON.parse(localStorage.getItem('gastoapp_pro_v4')) || [];
+let analysisChart = null;
+let balanceHidden = false;
+let selectedCat = 'Vivienda';
+
+const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const CATS = [
+    { id:'Vivienda',    emoji:'🏠', bg:'bg-vivienda',   bar:'#3B82F6' },
+    { id:'Servicios',   emoji:'⚡', bg:'bg-servicios',  bar:'#F97316' },
+    { id:'Comida',      emoji:'🍽️', bg:'bg-comida',     bar:'#EAB308' },
+    { id:'Salud',       emoji:'❤️', bg:'bg-salud',      bar:'#EF4444' },
+    { id:'Transporte',  emoji:'🚗', bg:'bg-transporte', bar:'#22C55E' },
+    { id:'Ocio',        emoji:'🎉', bg:'bg-ocio',       bar:'#A855F7' },
+    { id:'Ingreso',     emoji:'💰', bg:'bg-ingreso',    bar:'#22C55E' },
+    { id:'Otros',       emoji:'📦', bg:'bg-otros',      bar:'#94A3B8' },
+];
+const catMap = {};
+CATS.forEach(c => catMap[c.id] = c);
+
+const fmt = n => n.toLocaleString('es-AR', { minimumFractionDigits: 2 });
+const fmtShort = n => {
+    if (n >= 1000000) return '$' + (n/1000000).toFixed(1).replace('.0','') + 'M';
+    if (n >= 1000) return '$' + (n/1000).toFixed(0) + 'K';
+    return '$' + fmt(n);
+};
+const $ = id => document.getElementById(id);
+
+const today = new Date();
+let curMonth = today.getMonth();
+let curYear = today.getFullYear();
+
+// ─── Navigation ────────────────────────────────────────────────────
+function goToHome() {
+    $('splash').classList.remove('active');
+    $('home').classList.add('active');
+    renderHome();
+}
+
+function navigate(screen) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    $(screen).classList.add('active');
+    if (screen === 'home') renderHome();
+    if (screen === 'analysis') renderAnalysis();
+    if (screen === 'movements') renderMovements();
+    if (screen === 'add') renderAddForm();
+}
+
+// ─── Init selects ──────────────────────────────────────────────────
+function initSelects() {
+    ['mov-month'].forEach(id => {
+        const sel = $(id);
+        MONTHS.forEach((m, i) => {
+            const o = new Option(m, i);
+            if (i === curMonth) o.selected = true;
+            sel.add(o);
+        });
+    });
+    ['mov-year'].forEach(id => {
+        const sel = $(id);
+        for (let y = today.getFullYear() - 3; y <= today.getFullYear() + 2; y++) {
+            const o = new Option(y, y);
+            if (y === curYear) o.selected = true;
+            sel.add(o);
+        }
+    });
+    $('mov-month').onchange = () => { curMonth = +$('mov-month').value; renderMovements(); renderHome(); renderAnalysis(); };
+    $('mov-year').onchange  = () => { curYear  = +$('mov-year').value;  renderMovements(); renderHome(); renderAnalysis(); };
+}
+
+// ─── Get filtered data ─────────────────────────────────────────────
+function getFiltered() {
+    return db.filter(x => {
+        const d = new Date(x.date);
+        return d.getMonth() === curMonth && d.getFullYear() === curYear;
+    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+function calcTotals(data) {
+    let income = 0, expense = 0;
+    const cats = {};
+    data.forEach(x => {
+        const v = parseFloat(x.amount);
+        if (x.category === 'Ingreso') income += v;
+        else { expense += v; cats[x.category] = (cats[x.category] || 0) + v; }
+    });
+    return { income, expense, balance: income - expense, cats };
+}
+
+// ─── Render Home ───────────────────────────────────────────────────
+function renderHome() {
+    const data = getFiltered();
+    const { income, expense, balance } = calcTotals(data);
+    const pct = income > 0 ? (expense / income) * 100 : (expense > 0 ? 100 : 0);
+
+    $('balance-amount').textContent = balanceHidden ? '••••••' : `$${fmt(balance)}`;
+    $('balance-amount').style.color = balance < 0 ? '#FF6B6B' : '#fff';
+    $('balance-period').textContent = `${MONTHS[curMonth]} ${curYear}`;
+    $('home-income').textContent = `$${fmt(income)}`;
+    $('home-expense').textContent = `$${fmt(expense)}`;
+    $('progress-pct').textContent = `${Math.round(pct)}%`;
+    $('home-spent-lbl').textContent = `Gastado: $${fmt(expense)}`;
+    $('home-income-lbl').textContent = `Presupuesto: $${fmt(income)}`;
+
+    const bar = $('home-progress-bar');
+    bar.style.width = `${Math.min(pct, 100)}%`;
+    bar.className = 'progress-bar' + (pct >= 100 ? ' danger' : pct > 80 ? ' warning' : '');
+
+    save();
+}
+
+// ─── Render Analysis ───────────────────────────────────────────────
+function renderAnalysis() {
+    const data = getFiltered();
+    const { expense, cats } = calcTotals(data);
+    $('chart-total').textContent = `$${fmt(expense)}`;
+
+    const labels = Object.keys(cats);
+    const values = Object.values(cats);
+    const colors = labels.map(l => (catMap[l] || {bar:'#94A3B8'}).bar);
+
+    if (analysisChart) { analysisChart.destroy(); analysisChart = null; }
+    if (labels.length) {
+        const ctx = $('analysisChart').getContext('2d');
+        analysisChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{ data: values, backgroundColor: colors, borderWidth: 3, borderColor: '#fff', hoverOffset: 12 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                cutout: '68%',
+                animation: { animateScale: true, duration: 600 },
+                plugins: { legend: { display: false }, tooltip: {
+                    callbacks: { label: ctx => ` $${ctx.parsed.toLocaleString('es-AR',{minimumFractionDigits:2})}` }
+                }}
+            }
+        });
+    }
+
+    // Category list
+    const list = $('cat-list');
+    list.innerHTML = '';
+    if (!labels.length) {
+        list.innerHTML = '<div class="empty-state"><div class="emoji">📊</div><p>Sin gastos este período</p></div>';
+        return;
+    }
+    labels.forEach((cat, i) => {
+        const c = catMap[cat] || { emoji: '📦', bg: 'bg-otros', bar: '#94A3B8' };
+        const pct = expense > 0 ? Math.round((values[i] / expense) * 100) : 0;
+        const el = document.createElement('div');
+        el.className = 'cat-item fade-in';
+        el.style.animationDelay = `${i * 0.05}s`;
+        el.innerHTML = `
+            <div class="cat-icon ${c.bg}">${c.emoji}</div>
+            <div class="cat-info">
+                <div class="cat-name">${cat}</div>
+                <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${pct}%;background:${c.bar};"></div></div>
+            </div>
+            <div class="cat-amounts">
+                <div class="cat-amount">$${fmt(values[i])}</div>
+                <div class="cat-pct">${pct}%</div>
+            </div>`;
+        list.appendChild(el);
+    });
+}
+
+// ─── Render Movements ─────────────────────────────────────────────
+function renderMovements() {
+    const data = getFiltered();
+    const list = $('movements-list');
+    list.innerHTML = '';
+    $('mov-count').textContent = `${data.length} registro${data.length !== 1 ? 's' : ''}`;
+
+    if (!data.length) {
+        $('movements-empty').classList.remove('hidden');
+        return;
+    }
+    $('movements-empty').classList.add('hidden');
+
+    data.forEach((item, i) => {
+        const isExp = item.category !== 'Ingreso';
+        const v = parseFloat(item.amount);
+        const c = catMap[item.category] || { emoji: '📦', bg: 'bg-otros' };
+        const d = new Date(item.date);
+        const dateStr = d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
+        const el = document.createElement('div');
+        el.className = 'movement-item';
+        el.style.animationDelay = `${i * 0.04}s`;
+        el.innerHTML = `
+            <div class="movement-icon ${c.bg}">${c.emoji}</div>
+            <div class="movement-info">
+                <div class="movement-name">${item.desc}</div>
+                <div class="movement-meta">${item.category} · ${dateStr}</div>
+            </div>
+            <div class="movement-amount ${isExp ? 'expense' : 'income'}">${isExp ? '-' : '+'}$${fmt(v)}</div>
+            <button class="del-btn" onclick="deleteEntry('${item.id}')">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+            </button>`;
+        list.appendChild(el);
+    });
+    save();
+}
+
+// ─── Render Add Form ──────────────────────────────────────────────
+function renderAddForm() {
+    $('f-desc').value = '';
+    $('f-amount').value = '';
+    const list = $('cat-radio-list');
+    list.innerHTML = '';
+    CATS.forEach(c => {
+        const el = document.createElement('div');
+        el.className = 'cat-radio-item';
+        el.onclick = () => { selectedCat = c.id; renderAddForm(); };
+        const isSelected = selectedCat === c.id;
+        el.innerHTML = `
+            <div class="cat-radio-icon ${c.bg}">${c.emoji}</div>
+            <span class="cat-radio-name">${c.id}</span>
+            <div class="radio-circle ${isSelected ? 'checked' : ''}"></div>`;
+        list.appendChild(el);
+    });
+}
+
+// ─── Save Movement ────────────────────────────────────────────────
+function saveMovement() {
+    const desc = $('f-desc').value.trim();
+    const amount = parseFloat($('f-amount').value);
+    if (!desc) { toast('⚠️ Ingresá una descripción'); return; }
+    if (!amount || amount <= 0) { toast('⚠️ Ingresá un monto válido'); return; }
+    db.push({
+        id: Date.now().toString(),
+        desc, amount, category: selectedCat,
+        date: new Date(curYear, curMonth, today.getDate()).toISOString()
+    });
+    save();
+    toast('✓ Movimiento registrado');
+    navigate('home');
+}
+
+// ─── Delete ───────────────────────────────────────────────────────
+window.deleteEntry = id => {
+    db = db.filter(x => x.id !== id);
+    renderMovements();
+    renderHome();
+    renderAnalysis();
+    toast('🗑 Registro eliminado');
+};
+
+// ─── Toggle balance ───────────────────────────────────────────────
+function toggleBalance() {
+    balanceHidden = !balanceHidden;
+    renderHome();
+}
+
+function setPeriod(btn, period) {
+    document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    renderAnalysis();
+}
+
+function showNotifToast() { toast('🔔 Sin notificaciones nuevas'); }
+function showMonthPicker() { toast('📅 Usá el selector en Movimientos'); }
+
+// ─── Save ─────────────────────────────────────────────────────────
+function save() {
+    localStorage.setItem('gastoapp_pro_v4', JSON.stringify(db));
+}
+
+// ─── Toast ────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+    const el = $('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// ─── Export PDF ───────────────────────────────────────────────────
+function exportPDF() {
+    const data = getFiltered();
+    if (!data.length) return toast('No hay datos para exportar');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const { income, expense, balance } = calcTotals(data);
+    const monthName = MONTHS[curMonth];
+    const pw = doc.internal.pageSize.getWidth();
+    const purple = [108, 99, 255];
+    const white = [255, 255, 255];
+    const slate = [100, 116, 139];
+
+    doc.setFillColor(...purple);
+    doc.roundedRect(0, 0, pw, 44, 0, 0, 'F');
+    doc.setTextColor(...white);
+    doc.setFontSize(20); doc.setFont('helvetica','bold');
+    doc.text('GastoApp Pro', 14, 22);
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.setTextColor(200,196,255);
+    doc.text('CONTROL DE PRESUPUESTO', 14, 30);
+    doc.setFontSize(11); doc.setFont('helvetica','bold');
+    doc.setTextColor(...white);
+    doc.text(`${monthName} ${curYear}`, pw - 14, 22, { align:'right' });
+    doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.setTextColor(200,196,255);
+    doc.text('PERÍODO', pw - 14, 29, { align:'right' });
+
+    const cw = (pw - 28 - 10) / 3, cy = 52;
+    [[`$${fmt(balance)}`, 'BALANCE', balance < 0 ? [239,68,68] : [16,185,129]],
+     [`$${fmt(income)}`, 'INGRESOS', [16,185,129]],
+     [`$${fmt(expense)}`, 'GASTOS', [239,68,68]]].forEach(([val,lbl,col], i) => {
+        const x = 14 + i * (cw + 5);
+        doc.setFillColor(248,250,252); doc.setDrawColor(226,232,240);
+        doc.roundedRect(x, cy, cw, 22, 3, 3, 'FD');
+        doc.setFontSize(6); doc.setFont('helvetica','bold'); doc.setTextColor(...slate);
+        doc.text(lbl, x + cw/2, cy + 7, {align:'center'});
+        doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...col);
+        doc.text(val, x + cw/2, cy + 17, {align:'center'});
+    });
+
+    doc.autoTable({
+        startY: cy + 30,
+        head: [['Fecha', 'Descripción', 'Categoría', 'Importe']],
+        body: data.map(x => {
+            const isExp = x.category !== 'Ingreso';
+            const v = parseFloat(x.amount);
+            return [
+                new Date(x.date).toLocaleDateString('es-AR',{day:'2-digit',month:'short'}),
+                x.desc, x.category,
+                `${isExp ? '-' : '+'}$${fmt(v)}`
+            ];
+        }),
+        margin: { left: 14, right: 14 },
+        headStyles: { fillColor: purple, textColor: white, fontStyle: 'bold', fontSize: 8 },
+        bodyStyles: { fontSize: 8, textColor: [30,41,59] },
+        alternateRowStyles: { fillColor: [248,250,252] },
+        columnStyles: { 3: { halign:'right', fontStyle:'bold' } },
+        didParseCell: d => {
+            if (d.section === 'body' && d.column.index === 3) {
+                d.cell.styles.textColor = d.cell.raw.startsWith('-') ? [220,38,38] : [16,185,129];
+            }
+        }
+    });
+
+    const ph = doc.internal.pageSize.getHeight();
+    doc.setFontSize(7); doc.setTextColor(...slate);
+    doc.text(`GastoApp Pro · ${new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'})}`, pw/2, ph-8, {align:'center'});
+    doc.save(`Balance_${monthName}_${curYear}.pdf`);
+    toast('📥 PDF exportado');
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────
+initSelects();
+renderAddForm();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+}
+</script>
+</body>
+</html>
