@@ -1,6 +1,7 @@
 # 💰 GastoApp Pro
 
-<img width="1057" height="861" alt="{90B71830-0C38-4E0B-AB5F-D083ADE132B7}" src="https://github.com/user-attachments/assets/8e82bf15-fb45-4766-9344-a97c064d9216" />
+![Uploading Mockup.png…]()
+
 
 
 > Controlá tu dinero como un pro — simple, visual y desde cualquier dispositivo.
