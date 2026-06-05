@@ -6,7 +6,8 @@
 
 > Controlá tu dinero como un pro — simple, visual y desde cualquier dispositivo.
 
-![Mockup GastoApp Pro](https://private-user-images.githubusercontent.com/227912844/599447412-0a14025e-36ef-495e-bc11-b9174a2f9b25.png)
+<img width="1698" height="926" alt="Mockup" src="https://github.com/user-attachments/assets/6901bac9-4e05-471b-aad2-d145dbb21346" />
+
 
 🌐 **Demo:** https://coderhouse2025-droid.github.io/App/
 
