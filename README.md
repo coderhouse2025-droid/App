@@ -268,15 +268,6 @@ Abrir directamente:
 ```
 index.html
 ```
-
-Para habilitar el Service Worker (requiere HTTPS o localhost):
-```bash
-npm install -g live-server
-live-server
-```
-
-La app estará disponible en `http://localhost:8080`. El Service Worker se registra automáticamente y la app es instalable como PWA desde el menú del browser.
-
 ---
 
 ## 📁 Estructura del proyecto
